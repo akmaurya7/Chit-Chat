@@ -1,4 +1,4 @@
-package com.example.chitchat
+package com.example.chitchat.View.Navigation
 
 object Routes {
     const val EmailSignInScreen = "EmailSignInScreen"

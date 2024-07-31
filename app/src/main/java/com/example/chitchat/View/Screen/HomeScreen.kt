@@ -1,7 +1,13 @@
-package com.example.chitchat
+package com.example.chitchat.View.Screen
 
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.AccountCircle
@@ -9,6 +15,8 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FloatingActionButton
@@ -25,21 +33,51 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import coil.compose.rememberAsyncImagePainter
+import com.example.chitchat.Model.EmailAuthState
+import com.example.chitchat.View.Navigation.Routes
+import com.example.chitchat.View.ViewModel.EmailAuthViewModel
+import com.google.firebase.firestore.FirebaseFirestore
 
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(
+    navController: NavController,
+    emailAuthViewModel: EmailAuthViewModel,
+    db:FirebaseFirestore
+) {
+    val emailAuthState by emailAuthViewModel.emailAuthState.observeAsState()
+    val userDetail by emailAuthViewModel.emailUserState.collectAsState()
+    //val currentUserDetails = emailAuthViewModel.getCurrentUser(db)
+
+
+    // Get image from the database and parse it into the uri
+    var userImageUri by remember { mutableStateOf<Uri?>(null) }
+    userImageUri = Uri.parse(userDetail.imageUri)
+
+    LaunchedEffect(emailAuthState) {
+        when(emailAuthState){
+            is EmailAuthState.Unauthenticated -> {navController.navigate(Routes.EmailSignInScreen)}
+            else -> Unit
+        }
+    }
     Scaffold(
-        topBar = { AppTopBar() },
+        topBar = { AppTopBar(userImageUri = userImageUri) },
         bottomBar = { AppBottomBar() },
         floatingActionButton = {
 
@@ -55,14 +93,36 @@ fun HomeScreen(navController: NavController) {
         floatingActionButtonPosition = FabPosition.End
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            // Main content goes here
+            Column {
+                if (userImageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(userImageUri),
+                        contentDescription = "User Image",
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, Color.Gray, CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = "Default User Icon",
+                        modifier = Modifier.size(120.dp),
+                        tint = Color.Gray
+                    )
+                }
+                Button(onClick = { emailAuthViewModel.signOut() }) {
+                    Text(text = "Sign Out")
+                }
+            }
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AppTopBar() {
+fun AppTopBar(userImageUri:Uri?) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior(rememberTopAppBarState())
     TopAppBar(
         colors = topAppBarColors(
@@ -79,7 +139,26 @@ fun AppTopBar() {
                 },
         actions = {
             IconButton(onClick = { /* TODO: Handle account icon click */ }) {
-                Icon(Icons.Filled.AccountCircle, contentDescription = "Account")
+
+                //Icon(Icons.Filled.AccountCircle, contentDescription = "Account")
+                if (userImageUri != null) {
+                    Image(
+                        painter = rememberAsyncImagePainter(userImageUri),
+                        contentDescription = "User Image",
+                        modifier = Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .border(2.dp, Color.Gray, CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = "Default User Icon",
+                        modifier = Modifier.size(120.dp),
+                        tint = Color.Gray
+                    )
+                }
             }
             IconButton(onClick = { /* TODO: Handle 3-dot menu click */ }) {
                 Icon(Icons.Filled.MoreVert, contentDescription = "More Options")

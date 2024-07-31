@@ -1,4 +1,4 @@
-package com.example.chitchat
+package com.example.chitchat.View.ViewModel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
